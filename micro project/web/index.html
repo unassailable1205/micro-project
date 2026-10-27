@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Code Analyzer & Execution Simulator</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header Bar -->
+    <header class="top-nav">
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <h1>Smart Code Analyzer & CPU Simulator</h1>
+          <span class="badge-row">
+            <span class="badge flat-badge">FLAT M1/M2</span>
+            <span class="badge coa-badge">COA M1/M2</span>
+            <span class="badge daa-badge">DAA M1/M2</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="controls-toolbar">
+        <div class="preset-group">
+          <label for="preset-select">Preset Program:</label>
+          <select id="preset-select" class="dropdown">
+            <option value="">Loading presets...</option>
+          </select>
+        </div>
+
+        <button id="btn-analyze" class="btn btn-primary" title="Tokenize (FLAT), Parse AST, Analyze Complexity (DAA), and Compile to Machine Code (COA)">
+          <span class="icon">▶</span> Analyze & Compile
+        </button>
+
+        <div class="divider"></div>
+
+        <div class="cpu-run-group">
+          <button id="btn-step-micro" class="btn btn-secondary" title="Step 1 Micro-Operation (T0 -> T1 -> ...)">
+            Step Micro (T)
+          </button>
+          <button id="btn-step-instr" class="btn btn-secondary" title="Step 1 Full Instruction Cycle">
+            Step Instr
+          </button>
+          <button id="btn-run" class="btn btn-success" title="Run Continuous Simulation">
+            Run CPU
+          </button>
+          <button id="btn-pause" class="btn btn-warning" style="display:none;" title="Pause Execution">
+            Pause
+          </button>
+          <button id="btn-reset" class="btn btn-danger" title="Reset CPU Registers & Memory">
+            Reset
+          </button>
+        </div>
+
+        <div class="speed-slider-group">
+          <label for="speed-range">Speed:</label>
+          <input type="range" id="speed-range" min="50" max="1500" step="50" value="400">
+          <span id="speed-label">400ms</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Multi-Pane Content Area -->
+    <main class="main-layout">
+      <!-- Left Column: Source Code Editor & Compiled Assembly -->
+      <section class="left-pane">
+        <div class="tab-header">
+          <button class="sub-tab active" data-tab="tab-source">Source Code</button>
+          <button class="sub-tab" data-tab="tab-assembly">COA Assembly</button>
+          <button class="sub-tab" data-tab="tab-machine">Machine Words</button>
+        </div>
+
+        <div class="tab-content pane-body">
+          <div id="tab-source" class="sub-pane active">
+            <div class="editor-header">
+              <span class="tag">Language: Simple C/JS-like Syntax with D&C</span>
+              <span id="code-line-count" class="meta-tag">Line 1</span>
+            </div>
+            <textarea id="source-editor" spellcheck="false" placeholder="// Enter statements here..."></textarea>
+          </div>
+
+          <div id="tab-assembly" class="sub-pane">
+            <div class="editor-header">
+              <span class="tag">Generated RISC Assembly</span>
+              <span id="asm-instr-count" class="meta-tag">0 Instructions</span>
+            </div>
+            <pre id="assembly-viewer" class="code-viewer">// Compiled assembly will appear here...</pre>
+          </div>
+
+          <div id="tab-machine" class="sub-pane">
+            <div class="editor-header">
+              <span class="tag">32-Bit Instruction Encoding [Opcode:6][Rd:2][Rs1:2][Rs2:2][Imm:16]</span>
+            </div>
+            <div id="machine-words-list" class="table-scroll">
+              <p class="placeholder-text">Compile code to inspect binary & hex machine words.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Execution Console Log -->
+        <div class="console-pane">
+          <div class="console-header">
+            <span>Terminal / Execution Console</span>
+            <button id="btn-clear-console" class="btn-tiny">Clear</button>
+          </div>
+          <div id="console-output" class="console-body">
+            <div class="log-entry system">[SYSTEM]: Smart Code Analyzer & CPU Simulator Ready.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Interactive Modules (COA, FLAT, DAA) -->
+      <section class="right-pane">
+        <!-- Main Feature Tabs -->
+        <nav class="module-tabs">
+          <button class="module-tab active" data-view="view-coa">
+            <span class="tab-icon">🖥️</span> COA Architecture & Execution Cycle
+          </button>
+          <button class="module-tab" data-view="view-flat">
+            <span class="tab-icon">⚙️</span> FLAT Automata & Grammar
+          </button>
+          <button class="module-tab" data-view="view-daa">
+            <span class="tab-icon">📊</span> DAA Complexity & D&C Trees
+          </button>
+        </nav>
+
+        <div class="view-container">
+          <!-- ============================================== -->
+          <!-- 1. COA ARCHITECTURE & SIMULATION VIEW          -->
+          <!-- ============================================== -->
+          <div id="view-coa" class="module-view active">
+            <!-- CPU Status & Micro-Op T-States Banner -->
+            <div class="micro-op-banner">
+              <div class="t-states-pipeline">
+                <div class="t-state-node" data-t="T0">
+                  <span class="t-title">T0</span>
+                  <span class="t-sub">MAR ← PC</span>
+                </div>
+                <div class="t-arrow">→</div>
+                <div class="t-state-node" data-t="T1">
+                  <span class="t-title">T1</span>
+                  <span class="t-sub">MDR ← M, PC+1</span>
+                </div>
+                <div class="t-arrow">→</div>
+                <div class="t-state-node" data-t="T2">
+                  <span class="t-title">T2</span>
+                  <span class="t-sub">IR ← MDR</span>
+                </div>
+                <div class="t-arrow">→</div>
+                <div class="t-state-node" data-t="T3">
+                  <span class="t-title">T3</span>
+                  <span class="t-sub">Decode Op</span>
+                </div>
+                <div class="t-arrow">→</div>
+                <div class="t-state-node" data-t="T4">
+                  <span class="t-title">T4</span>
+                  <span class="t-sub">ALU Exec</span>
+                </div>
+                <div class="t-arrow">→</div>
+                <div class="t-state-node" data-t="T5">
+                  <span class="t-title">T5</span>
+                  <span class="t-sub">Mem Read/Write</span>
+                </div>
+                <div class="t-arrow">→</div>
+                <div class="t-state-node" data-t="T6">
+                  <span class="t-title">T6</span>
+                  <span class="t-sub">Writeback & Flags</span>
+                </div>
+              </div>
+
+              <div class="active-micro-detail">
+                <div class="rtl-box">
+                  <span class="label">Current RTL:</span>
+                  <span id="current-rtl-text" class="rtl-text">MAR ← PC</span>
+                </div>
+                <div class="bus-box">
+                  <span class="label">Active Buses:</span>
+                  <span id="active-bus-tags">
+                    <span class="bus-pill" id="pill-addr">ADDR BUS</span>
+                    <span class="bus-pill" id="pill-data">DATA BUS</span>
+                    <span class="bus-pill" id="pill-ctrl">CONTROL BUS</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="coa-grid">
+              <!-- Registers Box -->
+              <div class="card registers-card">
+                <div class="card-title">Processor Registers & Datapath</div>
+                
+                <div class="reg-section">
+                  <span class="section-label">General Purpose Registers</span>
+                  <div class="registers-row">
+                    <div class="reg-box" id="reg-R0">
+                      <span class="reg-name">R0 (ACC)</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x0000</span>
+                    </div>
+                    <div class="reg-box" id="reg-R1">
+                      <span class="reg-name">R1</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x0000</span>
+                    </div>
+                    <div class="reg-box" id="reg-R2">
+                      <span class="reg-name">R2</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x0000</span>
+                    </div>
+                    <div class="reg-box" id="reg-R3">
+                      <span class="reg-name">R3</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x0000</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="reg-section">
+                  <span class="section-label">Special Purpose Registers</span>
+                  <div class="registers-row">
+                    <div class="reg-box special" id="reg-PC">
+                      <span class="reg-name">PC (Counter)</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x00</span>
+                    </div>
+                    <div class="reg-box special" id="reg-MAR">
+                      <span class="reg-name">MAR (Address)</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x00</span>
+                    </div>
+                    <div class="reg-box special" id="reg-MDR">
+                      <span class="reg-name">MDR (Data)</span>
+                      <span class="reg-val">0</span>
+                      <span class="reg-hex">0x0000</span>
+                    </div>
+                    <div class="reg-box special" id="reg-SP">
+                      <span class="reg-name">SP (Stack)</span>
+                      <span class="reg-val">255</span>
+                      <span class="reg-hex">0xFF</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="reg-section">
+                  <span class="section-label">Instruction Register (IR) & Status Flags</span>
+                  <div class="ir-flags-row">
+                    <div class="ir-display-box">
+                      <span class="label">IR:</span>
+                      <span id="reg-IR-text" class="ir-value">NOP</span>
+                    </div>
+                    <div class="flags-group">
+                      <span class="flag-badge" id="flag-ZF">ZF: 0</span>
+                      <span class="flag-badge" id="flag-SF">SF: 0</span>
+                      <span class="flag-badge" id="flag-CF">CF: 0</span>
+                      <span class="flag-badge" id="flag-OF">OF: 0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cpu-stats-strip">
+                  <div class="stat-item"><span class="k">Clock Cycles:</span> <span id="stat-cycles" class="v">0</span></div>
+                  <div class="stat-item"><span class="k">Instructions:</span> <span id="stat-instrs" class="v">0</span></div>
+                  <div class="stat-item"><span class="k">Status:</span> <span id="stat-status" class="v badge-ready">READY</span></div>
+                </div>
+              </div>
+
+              <!-- Main Memory (RAM) Card -->
+              <div class="card memory-card">
+                <div class="card-title">
+                  <span>RAM Memory (256 Words: Code 0-127 | Data 128-255)</span>
+                  <span class="mem-legend">
+                    <span class="dot dot-code"></span> Code
+                    <span class="dot dot-data"></span> Data
+                    <span class="dot dot-active"></span> Active PC/MAR
+                  </span>
+                </div>
+                <div class="memory-table-wrap">
+                  <table class="data-table" id="memory-table">
+                    <thead>
+                      <tr>
+                        <th>Addr</th>
+                        <th>Seg</th>
+                        <th>Label</th>
+                        <th>Dec</th>
+                        <th>Hex</th>
+                        <th>Disassembly / Value</th>
+                      </tr>
+                    </thead>
+                    <tbody id="memory-tbody">
+                      <tr><td colspan="6" class="placeholder-text">Click "Analyze & Compile" to load RAM memory.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- 2. FLAT AUTOMATA & GRAMMAR VIEW               -->
+          <!-- ============================================== -->
+          <div id="view-flat" class="module-view">
+            <div class="flat-grid">
+              <!-- DFA State Machine Interactive Transition Table -->
+              <div class="card">
+                <div class="card-title">
+                  <span>DFA Transition Tables (Automata Theory)</span>
+                  <div class="dfa-selector-pills">
+                    <button class="pill active" data-dfa="identifier">Identifier DFA</button>
+                    <button class="pill" data-dfa="number">Number DFA</button>
+                    <button class="pill" data-dfa="operator">Operator DFA</button>
+                  </div>
+                </div>
+                <div id="dfa-table-container" class="table-scroll">
+                  <p class="placeholder-text">Loading DFA transition matrix...</p>
+                </div>
+              </div>
+
+              <!-- Tokens & DFA Transition Traces -->
+              <div class="card">
+                <div class="card-title">
+                  <span>Recognized Token Stream & DFA Trajectory</span>
+                  <span id="flat-token-count" class="meta-tag">0 Tokens</span>
+                </div>
+                <div class="table-scroll">
+                  <table class="data-table" id="tokens-table">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Lexeme</th>
+                        <th>Position</th>
+                        <th>DFA State Transitions Path</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tokens-tbody">
+                      <tr><td colspan="4" class="placeholder-text">Tokens will appear here upon compilation.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Abstract Syntax Tree (AST) Explorer -->
+              <div class="card full-width">
+                <div class="card-title">Concrete Grammar & Abstract Syntax Tree (AST)</div>
+                <div id="ast-viewer" class="ast-tree-box">
+                  <pre id="ast-json">// AST representation will appear here...</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- 3. DAA COMPLEXITY & DIVIDE-AND-CONQUER VIEW   -->
+          <!-- ============================================== -->
+          <div id="view-daa" class="module-view">
+            <!-- Asymptotic Complexity Derivation Banner -->
+            <div class="card daa-summary-card">
+              <div class="card-title">Program Complexity Analysis (DAA Static Derivation)</div>
+              <div class="daa-metrics-row">
+                <div class="daa-metric-tile">
+                  <span class="m-label">Time Complexity</span>
+                  <span id="daa-time-val" class="m-val">O(1)</span>
+                  <span id="daa-time-desc" class="m-desc">Awaiting code analysis...</span>
+                </div>
+                <div class="daa-metric-tile">
+                  <span class="m-label">Space Complexity</span>
+                  <span id="daa-space-val" class="m-val">O(1)</span>
+                  <span id="daa-space-desc" class="m-desc">Scalar register/memory allocation</span>
+                </div>
+                <div class="daa-metric-tile">
+                  <span class="m-label">Max Loop Depth</span>
+                  <span id="daa-loop-val" class="m-val">0</span>
+                  <span class="m-desc">Nested loop hierarchy</span>
+                </div>
+                <div class="daa-metric-tile">
+                  <span class="m-label">Variables Allocated</span>
+                  <span id="daa-vars-val" class="m-val">0</span>
+                  <span class="m-desc">Data segment addresses</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Master Theorem Solver & D&C Interactive Trees -->
+            <div class="daa-grid">
+              <!-- Master Theorem Interactive Solver -->
+              <div class="card">
+                <div class="card-title">Master Theorem Recurrence Solver</div>
+                <div class="master-theorem-controls">
+                  <p class="formula-banner">T(n) = a · T(n / b) + Θ(n<sup>k</sup> · log<sup>p</sup> n)</p>
+                  <div class="input-row">
+                    <label>a (subproblems): <input type="number" id="mt-a" value="3" min="1" step="1"></label>
+                    <label>b (divisor): <input type="number" id="mt-b" value="2" min="1.1" step="0.5"></label>
+                    <label>k (work degree): <input type="number" id="mt-k" value="1" min="0" step="0.5"></label>
+                    <label>p (log factor): <input type="number" id="mt-p" value="0" step="1"></label>
+                    <button id="btn-solve-mt" class="btn btn-secondary">Solve Recurrence</button>
+                  </div>
+                </div>
+                <div id="master-theorem-result" class="mt-output-box">
+                  <div class="mt-result-line">Result: <span class="highlight" id="mt-bound">Θ(n^1.585)</span> (Case 1)</div>
+                  <p id="mt-explanation" class="mt-explanation">Work is leaf-heavy since k < log_b(a).</p>
+                </div>
+              </div>
+
+              <!-- Hardware Cycle Benchmark: Naive vs Divide-and-Conquer -->
+              <div class="card">
+                <div class="card-title">CPU Hardware Benchmark: Naive vs Divide-and-Conquer</div>
+                <div class="benchmark-content">
+                  <div class="benchmark-row">
+                    <div class="bench-col naive">
+                      <h4>Naive Algorithm</h4>
+                      <p id="bench-naive-name" class="name">Iterative O(n)</p>
+                      <div class="stat"><span class="k">Instructions:</span> <span id="bench-naive-instr" class="v">-</span></div>
+                      <div class="stat"><span class="k">Clock Cycles:</span> <span id="bench-naive-cycles" class="v">-</span></div>
+                    </div>
+                    <div class="vs-divider">VS</div>
+                    <div class="bench-col dnc">
+                      <h4>Divide & Conquer</h4>
+                      <p id="bench-dnc-name" class="name">Fast Exponentiation O(log n)</p>
+                      <div class="stat"><span class="k">Instructions:</span> <span id="bench-dnc-instr" class="v">-</span></div>
+                      <div class="stat"><span class="k">Clock Cycles:</span> <span id="bench-dnc-cycles" class="v">-</span></div>
+                    </div>
+                  </div>
+                  <div class="speedup-banner">
+                    Speedup: <span id="bench-speedup" class="badge-speedup">1.0x</span>
+                    <span id="bench-reduction" class="sub-text">(0% clock cycles saved)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Divide-and-Conquer Recursion Tree Visualizer -->
+              <div class="card full-width">
+                <div class="card-title">
+                  <span>Interactive Divide-and-Conquer Recursion Tree</span>
+                  <div class="tree-controls">
+                    <button class="pill active" data-dnc="fastpow">FastPow (2^8)</button>
+                    <button class="pill" data-dnc="karatsuba">Karatsuba (42 × 18)</button>
+                    <button class="pill" data-dnc="binsearch">Binary Search</button>
+                  </div>
+                </div>
+                <div id="recursion-tree-container" class="tree-container">
+                  <div class="tree-canvas" id="tree-canvas"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+// Example 1: Arithmetic Statements & Variable Declarations
+// Demonstrates DFA token recognition, syntax tree parsing, and basic register arithmetic
+let x = 12;
+let y = 8;
+let sum = x + y;
+let diff = x - y;
+let prod = x * y;
+let quot = x / y;
+let mod = x % y;
+
+print(sum);
+print(diff);
+print(prod);
+print(quot);
+print(mod);

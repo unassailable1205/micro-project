@@ -1,0 +1,12 @@
+// Example 2: While Loop and Linear Asymptotic Complexity O(n)
+// Demonstrates loop branching, condition codes, flags (ZF, SF), and complexity analysis
+let n = 10;
+let total = 0;
+let counter = 1;
+
+while (counter <= n) {
+    total = total + counter;
+    counter = counter + 1;
+}
+
+print(total);

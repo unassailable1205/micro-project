@@ -1,0 +1,7 @@
+// Example 4: Divide-and-Conquer Fast Exponentiation
+// Recurrence: T(n) = T(n / 2) + O(1) => Complexity: O(log n)
+let base = 2;
+let exp = 10;
+let answer = dnc fastpow(base, exp);
+
+print(answer);

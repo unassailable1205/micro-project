@@ -1,0 +1,12 @@
+// Example 3: Conditional Branching and Comparator Flags
+// Demonstrates CMP instruction and JGT / JZ branching logic
+let val = 75;
+let threshold = 50;
+
+if (val > threshold) {
+    let flag = 1;
+    print(flag);
+} else {
+    let flag = 0;
+    print(flag);
+}

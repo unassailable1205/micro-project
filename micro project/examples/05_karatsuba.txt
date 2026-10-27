@@ -1,0 +1,7 @@
+// Example 5: Divide-and-Conquer Karatsuba Integer Multiplication
+// Recurrence: T(n) = 3*T(n / 2) + O(n) => Complexity: O(n^1.585)
+let a = 1234;
+let b = 5678;
+let product = dnc karatsuba(a, b);
+
+print(product);
